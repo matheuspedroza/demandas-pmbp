@@ -517,10 +517,14 @@ onAuthStateChanged(auth, user => {
 });
 
 async function onLogin() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-wrapper').style.display = 'block';
-  document.getElementById('nav-user').textContent = currentUser.displayName || currentUser.email || 'Usuário';
-  document.getElementById('nav-date').textContent = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  const loginScreen = document.getElementById('login-screen');
+  const appWrapper = document.getElementById('app-wrapper');
+  const navUser = document.getElementById('nav-user');
+  const navDate = document.getElementById('nav-date');
+  if (loginScreen) loginScreen.style.display = 'none';
+  if (appWrapper) appWrapper.style.display = 'block';
+  if (navUser) navUser.textContent = currentUser.displayName || currentUser.email || 'Usuário';
+  if (navDate) navDate.textContent = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
 
   // Populate dropdowns
   const secSel = document.getElementById('sec-view-select');
