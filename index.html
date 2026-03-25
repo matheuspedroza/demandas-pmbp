@@ -478,6 +478,7 @@ document.getElementById('btn-master-login').onclick = async () => {
   const p = document.getElementById('master-pass').value;
   if (u === MASTER_USER && p === MASTER_PASS) {
     isMaster = true;
+    sessionStorage.setItem('isMaster', '1');
     document.getElementById('login-error').textContent = '';
     // Sign in anonymously so Firestore auth works
     try {
@@ -500,7 +501,14 @@ document.getElementById('master-pass').addEventListener('keydown', e => {
 onAuthStateChanged(auth, user => {
   if (isMaster) return; // master login already handled
   if (user) {
-    currentUser = user;
+    // Restore master session if anonymous user exists in sessionStorage
+    const savedMaster = sessionStorage.getItem('isMaster');
+    if (user.isAnonymous && savedMaster === '1') {
+      isMaster = true;
+      currentUser = { displayName: 'Master', email: 'master', uid: user.uid };
+    } else {
+      currentUser = user;
+    }
     onLogin();
   } else {
     document.getElementById('login-screen').style.display = 'flex';
@@ -511,7 +519,7 @@ onAuthStateChanged(auth, user => {
 async function onLogin() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-wrapper').style.display = 'block';
-  document.getElementById('nav-user').textContent = currentUser.displayName || currentUser.email;
+  document.getElementById('nav-user').textContent = currentUser.displayName || currentUser.email || 'Usuário';
   document.getElementById('nav-date').textContent = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
 
   // Populate dropdowns
@@ -548,6 +556,7 @@ async function saveTasks() {
 window.doSignOut = async () => {
   if (unsubFirestore) unsubFirestore();
   isMaster = false; currentUser = null;
+  sessionStorage.removeItem('isMaster');
   try { await signOut(auth); } catch(e) {}
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app-wrapper').style.display = 'none';
