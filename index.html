@@ -311,11 +311,12 @@
   <div style="display:flex;align-items:center;gap:10px;flex:1;">
     <span style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);opacity:0.7;white-space:nowrap;">Atribuição</span>
     <select id="atrib-select" onchange="switchTabFromSelect(this.value)" style="font-size:11.5px;font-weight:500;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);border:1px solid var(--border);padding:6px 30px 6px 14px;border-radius:10px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;min-width:160px;letter-spacing:0.03em;transition:border-color 0.2s;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%228%22 height=%225%22%3E%3Cpath d=%22M0 0l4 5 4-5z%22 fill=%22%2300adef%22/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 11px center;">
-      <option value="katia">Geral <span id="badge-katia-opt"></span></option>
+      <option value="katia">Geral</option>
       <option value="p-Matheus">Matheus</option>
       <option value="p-Juninho">Juninho</option>
       <option value="p-Heitor">Heitor</option>
       <option value="p-Flávio">Flávio</option>
+      <option value="p-Reunião">Reunião</option>
     </select>
     <span style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);opacity:0.7;white-space:nowrap;">Secretaria</span>
     <select id="sec-view-select" class="sec-filter-select" onchange="applySecFilter(this.value)" style="font-size:11.5px;font-weight:500;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);border:1px solid var(--border);padding:6px 30px 6px 14px;border-radius:10px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;min-width:200px;letter-spacing:0.03em;transition:border-color 0.2s;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%228%22 height=%225%22%3E%3Cpath d=%22M0 0l4 5 4-5z%22 fill=%22%2300adef%22/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 11px center;">
@@ -413,7 +414,7 @@
 
 </main>
 
-<div class="version-badge">Beta 16</div>
+<div class="version-badge">Beta 18</div>
 </div><!-- /app-wrapper -->
 <div class="toast" id="toast"></div>
 
@@ -441,7 +442,7 @@ const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 
-const PEOPLE = ['Matheus','Juninho','Heitor','Flávio'];
+const PEOPLE = ['Matheus','Juninho','Heitor','Flávio','Reunião'];
 const RESP_OPTS = ['Matheus','Juninho','Heitor','Flávio','Reunião'];
 const SECRETARIAS = ['—','Gabinete da Prefeita','Vice-Prefeito','Administração e RH','Agricultura','Ambiente','Água e Esgoto','Assistência Social','Comunicação Social','Controladoria Geral','Complexo da Califórnia','Consultor Legislativo','Cultura','Defesa Civil','Educação','Esporte','Fazenda','Fundo de Previdência','Governo','Habitação','Tecnologia e Inovação','Obras Públicas','Ordem Pública','Planejamento','Procuradoria Geral','Saúde','Serviços Públicos','Trabalho e Desenvolvimento','Turismo'];
 
