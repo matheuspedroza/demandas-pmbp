@@ -407,6 +407,7 @@
 
 </main>
 
+<div class="version-badge">Beta 7</div>
 </div><!-- /app-wrapper -->
 <div class="toast" id="toast"></div>
 
@@ -461,59 +462,65 @@ let activePersonFilter = 'Aberta';
 let unsubFirestore = null;
 
 // ── AUTH ──
-document.getElementById('btn-google-login').onclick = async () => {
-  document.getElementById('login-spinner').style.display = 'block';
-  document.getElementById('login-error').textContent = '';
-  try {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  } catch(e) {
-    document.getElementById('login-error').textContent = 'Erro ao entrar com Google. Tente novamente.';
-    document.getElementById('login-spinner').style.display = 'none';
-  }
-};
 
-document.getElementById('btn-master-login').onclick = async () => {
-  const u = document.getElementById('master-user').value.trim();
-  const p = document.getElementById('master-pass').value;
-  if (u === MASTER_USER && p === MASTER_PASS) {
-    isMaster = true;
-    sessionStorage.setItem('isMaster', '1');
-    document.getElementById('login-error').textContent = '';
-    // Sign in anonymously so Firestore auth works
-    try {
-      const anonResult = await signInAnonymously(auth);
-      currentUser = { displayName: 'Master', email: 'master', uid: anonResult.user.uid };
-    } catch(e) {
-      currentUser = { displayName: 'Master', email: 'master', uid: 'master' };
-    }
-    onLogin();
-  } else {
-    document.getElementById('login-error').textContent = 'Usuário ou senha incorretos.';
-  }
-};
-
-document.getElementById('master-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('btn-master-login').click();
-});
 
 // Only react to auth state changes if NOT in master mode
-onAuthStateChanged(auth, user => {
-  if (isMaster) return; // master login already handled
-  if (user) {
-    // Restore master session if anonymous user exists in sessionStorage
-    const savedMaster = sessionStorage.getItem('isMaster');
-    if (user.isAnonymous && savedMaster === '1') {
-      isMaster = true;
-      currentUser = { displayName: 'Master', email: 'master', uid: user.uid };
+// Wait for DOM before setting up auth listener
+window.addEventListener('DOMContentLoaded', () => {
+  onAuthStateChanged(auth, user => {
+    if (isMaster) return;
+    if (user) {
+      const savedMaster = sessionStorage.getItem('isMaster');
+      if (user.isAnonymous && savedMaster === '1') {
+        isMaster = true;
+        currentUser = { displayName: 'Master', email: 'master', uid: user.uid };
+      } else {
+        currentUser = user;
+      }
+      onLogin();
     } else {
-      currentUser = user;
+      const ls = document.getElementById('login-screen');
+      const aw = document.getElementById('app-wrapper');
+      if (ls) ls.style.display = 'flex';
+      if (aw) aw.style.display = 'none';
     }
-    onLogin();
-  } else {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app-wrapper').style.display = 'none';
-  }
+  });
+
+  // Button listeners also need DOM
+  document.getElementById('btn-google-login').onclick = async () => {
+    document.getElementById('login-spinner').style.display = 'block';
+    document.getElementById('login-error').textContent = '';
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch(e) {
+      document.getElementById('login-error').textContent = 'Erro ao entrar com Google. Tente novamente.';
+      document.getElementById('login-spinner').style.display = 'none';
+    }
+  };
+
+  document.getElementById('btn-master-login').onclick = async () => {
+    const u = document.getElementById('master-user').value.trim();
+    const p = document.getElementById('master-pass').value;
+    if (u === MASTER_USER && p === MASTER_PASS) {
+      isMaster = true;
+      sessionStorage.setItem('isMaster', '1');
+      document.getElementById('login-error').textContent = '';
+      try {
+        const anonResult = await signInAnonymously(auth);
+        currentUser = { displayName: 'Master', email: 'master', uid: anonResult.user.uid };
+      } catch(e) {
+        currentUser = { displayName: 'Master', email: 'master', uid: 'master' };
+      }
+      onLogin();
+    } else {
+      document.getElementById('login-error').textContent = 'Usuário ou senha incorretos.';
+    }
+  };
+
+  document.getElementById('master-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-master-login').click();
+  });
 });
 
 async function onLogin() {
