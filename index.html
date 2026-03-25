@@ -314,8 +314,9 @@
     <button class="nav-tab" data-p="Flávio" onclick="switchTab('p-Flávio')" id="tab-p-Flávio">Flávio <span class="tab-badge" id="badge-p-Flávio"></span></button>
   </div>
   <div class="nav-right">
+    <span class="nav-user" id="nav-user"></span>
     <div class="nav-date" id="nav-date"></div>
-    <button class="btn-reset" onclick="hardReset()">↺ Reset</button>
+    <button class="btn-small" onclick="window.doSignOut()" style="color:var(--danger);border-color:rgba(255,90,90,0.3);">⏻ Sair</button>
   </div>
 </nav>
 <div id="subbar" style="background:rgba(13,15,20,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);padding:0 28px;display:flex;align-items:center;gap:14px;height:46px;">
@@ -407,7 +408,7 @@
 
 </main>
 
-<div class="version-badge">Beta 7</div>
+<div class="version-badge">Beta 9</div>
 </div><!-- /app-wrapper -->
 <div class="toast" id="toast"></div>
 
@@ -561,8 +562,26 @@ async function onLogin() {
 }
 
 async function saveTasks() {
-  try { await setDoc(doc(db, 'boards', 'shared'), { tasks }); } catch(e) { toast('Erro ao salvar ✕'); }
+  try {
+    await setDoc(doc(db, 'boards', 'shared'), { tasks });
+  } catch(e) {
+    console.error('saveTasks error:', e);
+    toast('Erro ao salvar ✕');
+  }
 }
+
+async function seedDatabase() {
+  try {
+    tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    await setDoc(doc(db, 'boards', 'shared'), { tasks });
+    renderAll();
+    toast('Banco populado com dados originais ✓');
+  } catch(e) {
+    console.error('seed error:', e);
+    toast('Erro ao popular banco ✕');
+  }
+}
+window.seedDatabase = seedDatabase;
 
 window.doSignOut = async () => {
   if (unsubFirestore) unsubFirestore();
@@ -662,7 +681,25 @@ window._uf = (id,field,value) => { const t=tasks.find(x=>x.id===id);if(!t)return
 window._ur = (id,sel) => { const t=tasks.find(x=>x.id===id);if(!t)return;t.responsible=sel.value;sel.className=`resp-select ${rClass(sel.value)}`;saveTasks();renderAll();toast(`Responsável: ${sel.value} ✓`); };
 window._us = (id,sel) => { const t=tasks.find(x=>x.id===id);if(!t)return;t.status=sel.value;saveTasks();renderAll();toast('Status atualizado ✓'); };
 window._mv = (id,dir) => { const idx=tasks.findIndex(t=>t.id===id);if(idx===-1)return;const ni=idx+dir;if(ni<0||ni>=tasks.length)return;[tasks[idx],tasks[ni]]=[tasks[ni],tasks[idx]];tasks.forEach((t,i)=>t.id=i+1);saveTasks();renderAll(); };
-window._del = (id) => { showConfirm('Tem certeza que gostaria de enviar para a lixeira?',()=>{const t=tasks.find(x=>x.id===id);if(!t)return;t.status='Lixeira';saveTasks();renderAll();toast('Enviado para a lixeira ✓');}); };
+window._del = (id) => {
+  const t = tasks.find(x=>x.id===id);
+  if (!t) return;
+  if (t.status === 'Lixeira') {
+    showConfirm('Apagar definitivamente esta demanda? Esta ação não pode ser desfeita.', () => {
+      tasks = tasks.filter(x=>x.id!==id);
+      // Renumber
+      tasks.forEach((t,i)=>t.id=i+1);
+      saveTasks(); renderAll();
+      toast('Demanda apagada definitivamente ✓');
+    }, true);
+  } else {
+    showConfirm('Tem certeza que gostaria de enviar para a lixeira?', () => {
+      t.status = 'Lixeira';
+      saveTasks(); renderAll();
+      toast('Enviado para a lixeira ✓');
+    }, false);
+  }
+};
 window._sf = (val) => { filters.katia=val;renderBoard(); };
 window._spf = (person,val) => { activePersonFilter=val;renderPerson(person); };
 
@@ -713,15 +750,16 @@ window.clearSecFilter = () => {
 };
 
 // ── CONFIRM MODAL ──
-function showConfirm(msg,onYes){
+function showConfirm(msg, onYes, isPermanent=false){
   const o=document.createElement('div');
   o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  o.innerHTML=`<div style="background:#13161e;border:1px solid rgba(201,168,76,0.3);border-radius:16px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-    <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#e8e6e0;margin-bottom:14px;">Confirmar</div>
+  const btnLabel = isPermanent ? 'Apagar definitivamente' : 'Enviar para lixeira';
+  o.innerHTML=`<div style="background:#13161e;border:1px solid ${isPermanent ? 'rgba(255,90,90,0.5)' : 'rgba(201,168,76,0.3)'};border-radius:16px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+    <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#e8e6e0;margin-bottom:14px;">${isPermanent ? '⚠️ Atenção' : 'Confirmar'}</div>
     <div style="font-size:14px;color:#9090a0;line-height:1.55;margin-bottom:24px;">${msg}</div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button id="cn" style="font-size:12px;font-family:'DM Sans',sans-serif;padding:8px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#6b6b7a;cursor:pointer;">Cancelar</button>
-      <button id="cy" style="font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;padding:8px 18px;border-radius:8px;border:1px solid rgba(255,90,90,0.4);background:rgba(255,90,90,0.1);color:#ff5a5a;cursor:pointer;">Enviar para lixeira</button>
+      <button id="cy" style="font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;padding:8px 18px;border-radius:8px;border:1px solid rgba(255,90,90,0.4);background:rgba(255,90,90,0.1);color:#ff5a5a;cursor:pointer;">${btnLabel}</button>
     </div></div>`;
   document.body.appendChild(o);
   o.querySelector('#cy').onclick=()=>{document.body.removeChild(o);onYes();};
