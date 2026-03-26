@@ -293,7 +293,7 @@
     <div class="login-eyebrow">Prefeitura Municipal de Barra do Piraí</div>
     <div class="login-title">Gestão de <span>Demandas</span></div>
     <div class="login-sub">Sistema de Gestão do Gabinete da Prefeita</div>
-    <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(0,173,239,0.4);margin-top:-8px;margin-bottom:8px;">Beta 22</div>
+    <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(0,173,239,0.4);margin-top:-8px;margin-bottom:8px;">Beta 24</div>
     <div id="login-spinner" style="display:none"><div class="spinner"></div></div>
     <button class="btn-google" id="btn-google-login">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
@@ -430,14 +430,14 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously }
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBPuPAXqHdbpeBIAwAH2bfiPg2wwTtPSV0",
-  authDomain: "matheuspedroza.github.io",
+  authDomain: "appgp-pmbp.firebaseapp.com",
   projectId: "appgp-pmbp",
   storageBucket: "appgp-pmbp.firebasestorage.app",
   messagingSenderId: "699418499799",
@@ -484,18 +484,6 @@ let unsubFirestore = null;
 // Only react to auth state changes if NOT in master mode
 // Wait for DOM before setting up auth listener
 window.addEventListener('DOMContentLoaded', async () => {
-  // Handle Google redirect result on page load
-  try {
-    const result = await getRedirectResult(auth);
-    if (result?.user) {
-      isMaster = false;
-      currentUser = result.user;
-      onLogin();
-    }
-  } catch(e) {
-    console.error('Redirect result error:', e);
-  }
-
   onAuthStateChanged(auth, user => {
     if (isMaster) return;
     if (user) {
@@ -521,9 +509,20 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('login-error').textContent = '';
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider);
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      if (result?.user) {
+        isMaster = false;
+        currentUser = result.user;
+        onLogin();
+      }
     } catch(e) {
-      document.getElementById('login-error').textContent = 'Erro ao entrar com Google. Tente novamente.';
+      console.error('Google login error:', e.code, e.message);
+      let msg = 'Erro ao entrar com Google.';
+      if (e.code === 'auth/popup-blocked') msg = 'Popup bloqueado. Permita popups para este site.';
+      else if (e.code === 'auth/popup-closed-by-user') msg = 'Login cancelado.';
+      else if (e.code === 'auth/unauthorized-domain') msg = 'Domínio não autorizado no Firebase.';
+      document.getElementById('login-error').textContent = msg;
       document.getElementById('login-spinner').style.display = 'none';
     }
   };
