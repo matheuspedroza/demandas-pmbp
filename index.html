@@ -316,7 +316,7 @@
       <option value="p-Juninho">Juninho</option>
       <option value="p-Heitor">Heitor</option>
       <option value="p-Flávio">Flávio</option>
-      <option value="p-Reunião">Reunião</option>
+      <option value="p-Reuniao">Reunião</option>
     </select>
     <span style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);opacity:0.7;white-space:nowrap;">Secretaria</span>
     <select id="sec-view-select" class="sec-filter-select" onchange="applySecFilter(this.value)" style="font-size:11.5px;font-weight:500;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);border:1px solid var(--border);padding:6px 30px 6px 14px;border-radius:10px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;min-width:200px;letter-spacing:0.03em;transition:border-color 0.2s;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%228%22 height=%225%22%3E%3Cpath d=%22M0 0l4 5 4-5z%22 fill=%22%2300adef%22/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 11px center;">
@@ -412,15 +412,25 @@
   </div>
 
 
+  <div class="section" id="sec-p-Reuniao">
+    <div class="section-header"><div>
+      <div class="section-eyebrow">Visão por Atribuição</div>
+      <div class="section-title">Tarefas de <span style="color:var(--reuniao)">Reunião</span></div>
+      <div class="person-subtitle">Demandas atribuídas a Reunião</div>
+    </div></div>
+    <div class="stats" id="stats-p-Reuniao"></div>
+    <div id="body-p-Reuniao"></div>
+  </div>
+
 </main>
 
-<div class="version-badge">Beta 18</div>
+<div class="version-badge">Beta 20</div>
 </div><!-- /app-wrapper -->
 <div class="toast" id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously }
+import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -442,7 +452,7 @@ const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 
-const PEOPLE = ['Matheus','Juninho','Heitor','Flávio','Reunião'];
+const PEOPLE = ['Matheus','Juninho','Heitor','Flávio','Reuniao'];
 const RESP_OPTS = ['Matheus','Juninho','Heitor','Flávio','Reunião'];
 const SECRETARIAS = ['—','Gabinete da Prefeita','Vice-Prefeito','Administração e RH','Agricultura','Ambiente','Água e Esgoto','Assistência Social','Comunicação Social','Controladoria Geral','Complexo da Califórnia','Consultor Legislativo','Cultura','Defesa Civil','Educação','Esporte','Fazenda','Fundo de Previdência','Governo','Habitação','Tecnologia e Inovação','Obras Públicas','Ordem Pública','Planejamento','Procuradoria Geral','Saúde','Serviços Públicos','Trabalho e Desenvolvimento','Turismo'];
 
@@ -474,6 +484,18 @@ let unsubFirestore = null;
 // Only react to auth state changes if NOT in master mode
 // Wait for DOM before setting up auth listener
 window.addEventListener('DOMContentLoaded', () => {
+  // Handle Google redirect result on page load
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      isMaster = false;
+      currentUser = result.user;
+      onLogin();
+    }
+  } catch(e) {
+    console.error('Redirect result error:', e);
+  }
+
   onAuthStateChanged(auth, user => {
     if (isMaster) return;
     if (user) {
@@ -499,7 +521,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-error').textContent = '';
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
     } catch(e) {
       document.getElementById('login-error').textContent = 'Erro ao entrar com Google. Tente novamente.';
       document.getElementById('login-spinner').style.display = 'none';
@@ -673,7 +695,7 @@ function renderBoard() {
 }
 
 function renderPerson(person) {
-  const all=tasks.filter(t=>t.responsible===person&&(!activeSecFilter||t.secretaria===activeSecFilter));
+  const all=tasks.filter(t=>t.responsible===person || (person==='Reuniao' && t.responsible==='Reunião')&&(!activeSecFilter||t.secretaria===activeSecFilter));
   const open=all.filter(t=>t.status==='Aberta').length;
   const done=all.filter(t=>t.status==='Concluída').length;
   const trash=all.filter(t=>t.status==='Lixeira').length;
